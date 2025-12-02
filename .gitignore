@@ -1,0 +1,11 @@
+# Bỏ qua thư mục tạm của Visual Studio
+.vs/
+.vscode/
+
+# Bỏ qua thư mục biên dịch (File chạy .exe, .dll)
+bin/
+obj/
+
+# Bỏ qua file cấu hình người dùng
+*.user
+*.suo
