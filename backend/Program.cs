@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using YourApplicationName.Services;
 
 var builder = WebApplication.CreateBuilder(args);
