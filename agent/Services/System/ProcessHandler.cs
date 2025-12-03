@@ -1,6 +1,7 @@
-﻿// File: Services/System/ProcessHandler.cs
+// File: Services/System/ProcessHandler.cs
 using System.Diagnostics; // Thư viện quản lý Process của .NET
 using System.Runtime.Versioning;
+using YourApplicationName.Dtos;
 
 namespace RemoteControl.Agent.Services.System
 {
@@ -71,14 +72,6 @@ namespace RemoteControl.Agent.Services.System
             }
         }
     }
-
-    // Class chứa dữ liệu để gửi đi (DTO)
-    // Bạn có thể để class này ở đây hoặc chuyển sang thư mục Models tùy ý
-    public class ProcessModel
-    {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public long MemoryMB { get; set; }
-        public string WindowTitle { get; set; } // Dùng để phân biệt App vs Process ngầm
-    }
 }
+
+  
