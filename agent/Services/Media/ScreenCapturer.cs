@@ -43,7 +43,7 @@ namespace RemoteControl.Agent.Services.Media // Namespace khớp với thư mụ
             {
                 // Nếu lỗi (ví dụ chưa cài thư viện), in ra console
                 Console.WriteLine($"Lỗi chụp màn hình: {ex.Message}");
-                return Array.Empty<byte>(); // Trả về mảng rỗng
+                return new byte[0]; // Trả về mảng rỗng
             }
         }
     }

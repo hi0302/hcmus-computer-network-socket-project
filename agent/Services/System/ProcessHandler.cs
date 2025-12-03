@@ -77,10 +77,8 @@ namespace RemoteControl.Agent.Services.System
     public class ProcessModel
     {
         public int Id { get; set; }
-        // Thêm dấu ? để cho phép nó có thể null
-        public string? Name { get; set; }
+        public string Name { get; set; }
         public long MemoryMB { get; set; }
-        // Hoặc gán giá trị mặc định là chuỗi rỗng
-        public string? WindowTitle { get; set; } = string.Empty;
+        public string WindowTitle { get; set; } // Dùng để phân biệt App vs Process ngầm
     }
 }

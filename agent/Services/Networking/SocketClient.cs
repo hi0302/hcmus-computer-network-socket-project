@@ -1,11 +1,8 @@
-﻿// File: Services/Networking/SocketClient.cs
+﻿
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
 using RemoteControl.Agent.Services.Media;
 using RemoteControl.Agent.Services.System;
-using RemoteControl.Agent.Services.Input;
-using RemoteControl.Agent.Models; // Nhớ using namespace chứa ResponseDto
-using System.Text.Json; // Cần thư viện này để xử lý JSON
 
 namespace RemoteControl.Agent.Services.Networking
 {
@@ -14,28 +11,21 @@ namespace RemoteControl.Agent.Services.Networking
         private readonly HubConnection _hubConnection;
         private readonly ILogger<SocketClient> _logger;
 
-        // Các Service xử lý
+        // Inject các service xử lý
         private readonly ProcessHandler _processHandler;
         private readonly ScreenCapturer _screenCapturer;
-        private readonly PowerHandler _powerHandler;
-        private readonly Keylogger _keylogger;
 
         public SocketClient(
             ILogger<SocketClient> logger,
             ProcessHandler processHandler,
-            ScreenCapturer screenCapturer,
-            PowerHandler powerHandler,
-            Keylogger keylogger)
+            ScreenCapturer screenCapturer)
         {
             _logger = logger;
             _processHandler = processHandler;
             _screenCapturer = screenCapturer;
-            _powerHandler = powerHandler;
-            _keylogger = keylogger;
 
-            // 1. URL phải là /controlhub (theo file Program.cs backend)
-            // Thay localhost bằng IP máy thật nếu chạy VMWare
-            string serverUrl = "http://localhost:55512/controlhub";
+            // LƯU Ý: Nếu chạy máy ảo, hãy thay 'localhost' bằng IP của máy thật (VD: http://192.168.1.10:5000/commandHub)
+            string serverUrl = "http://localhost:5000/commandHub";
 
             _hubConnection = new HubConnectionBuilder()
                 .WithUrl(serverUrl)
@@ -47,72 +37,35 @@ namespace RemoteControl.Agent.Services.Networking
 
         private void RegisterHandlers()
         {
-            // 2. Lắng nghe duy nhất sự kiện "ReceiveCommand" từ ControlHub
-            _hubConnection.On<string>("ReceiveCommand", async (commandJson) =>
+            
+            _hubConnection.On("GetProcesses", async () =>
             {
-                _logger.LogInformation($"Nhận lệnh từ Server: {commandJson}");
+                _logger.LogInformation("Nhận lệnh lấy danh sách Process...");
 
-                try
-                {
-                    // Parse lệnh từ JSON (Frontend gửi xuống)
-                    var cmd = JsonSerializer.Deserialize<CommandDto>(commandJson);
-                    if (cmd == null) return;
+                var list = _processHandler.GetProcesses();
 
-                    switch (cmd.CommandType)
-                    {
-                        case "GET_PROCESS":
-                            var processes = _processHandler.GetProcesses();
-                            await SendData("PROCESS_LIST", processes);
-                            break;
+                await _hubConnection.SendAsync("ReceiveProcessList", list);
 
-                        case "KILL_PROCESS":
-                            if (int.TryParse(cmd.Payload, out int pid))
-                            {
-                                _processHandler.KillProcess(pid);
-                                // Gửi thông báo lại nếu cần
-                            }
-                            break;
-
-                        case "CAPTURE_SCREEN":
-                            var imgBytes = _screenCapturer.TakeScreenshot();
-                            // Chuyển byte[] sang Base64 string để gửi qua JSON an toàn
-                            string imgBase64 = Convert.ToBase64String(imgBytes);
-                            await SendData("SCREENSHOT", imgBase64);
-                            break;
-
-                        case "SHUTDOWN":
-                            _powerHandler.Shutdown();
-                            break;
-
-                        case "RESTART":
-                            _powerHandler.Restart();
-                            break;
-
-                        default:
-                            _logger.LogWarning($"Lệnh không hỗ trợ: {cmd.CommandType}");
-                            break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError($"Lỗi xử lý lệnh: {ex.Message}");
-                }
+                _logger.LogInformation($"Đã gửi {list.Count} process về server.");
             });
-        }
 
-        // Hàm chung để gửi dữ liệu về Backend (Gọi SendDataFromAgent trong ControlHub)
-        private async Task SendData(string dataType, object data)
-        {
-            if (_hubConnection.State != HubConnectionState.Connected) return;
-
-            var response = new ResponseDto
+            // Xử lý chụp màn hình
+            _hubConnection.On("CaptureScreen", async () =>
             {
-                AgentId = _hubConnection.ConnectionId ?? "Unknown",
-                DataType = dataType,
-                Data = data
-            };
+                _logger.LogInformation("Nhận lệnh chụp màn hình...");
+                var imageBytes = _screenCapturer.TakeScreenshot();
 
-            await _hubConnection.SendAsync("SendDataFromAgent", response);
+                // Gửi ảnh về Server
+                await _hubConnection.SendAsync("ReceiveScreenshot", imageBytes);
+            });
+
+            // Xử lý Kill Process (Ví dụ nhận thêm tham số pid)
+            _hubConnection.On<int>("KillProcess", (pid) =>
+            {
+                _logger.LogInformation($"Nhận lệnh Kill Process ID: {pid}");
+                bool success = _processHandler.KillProcess(pid);
+                // Có thể gửi thông báo thành công/thất bại về lại server nếu cần
+            });
         }
 
         public async Task ConnectAsync(CancellationToken token)
@@ -121,29 +74,20 @@ namespace RemoteControl.Agent.Services.Networking
             {
                 try
                 {
+                    // Chỉ start nếu đang ngắt kết nối
                     if (_hubConnection.State == HubConnectionState.Disconnected)
                     {
                         await _hubConnection.StartAsync(token);
-                        _logger.LogInformation(">>> AGENT ĐÃ KẾT NỐI TỚI CONTROL HUB!");
+                        _logger.LogInformation(">>> Đã kết nối thành công tới Server Backend!");
                     }
 
-                    // Gửi Keylog định kỳ (nếu có kết nối)
-                    if (_hubConnection.State == HubConnectionState.Connected)
-                    {
-                        string logs = _keylogger.GetLogAndClear();
-                        if (!string.IsNullOrEmpty(logs))
-                        {
-                            // Gửi chunk keylog về
-                            await SendData("KEYLOG_CHUNK", logs);
-                        }
-                    }
-
-                    await Task.Delay(3000, token);
+                    // Chờ một chút để không lặp quá nhanh, hoặc dùng Semaphore để đợi
+                    await Task.Delay(5000, token);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning($"Chưa kết nối được: {ex.Message}. Thử lại sau 3s...");
-                    await Task.Delay(3000, token);
+                    _logger.LogWarning($"Chưa kết nối được Server: {ex.Message}. Thử lại sau 5s...");
+                    await Task.Delay(5000, token);
                 }
             }
         }

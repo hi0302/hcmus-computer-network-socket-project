@@ -1,28 +1,26 @@
-﻿using YourApplicationName.Hubs; // <--- SỬA LẠI namespace này cho khớp với thư mục Hubs của bạn
-using Microsoft.AspNetCore.SignalR;
-// using backend.Services; // <--- Uncomment nếu bạn đã có file AgentTrackerService
+﻿using Microsoft.AspNetCore.SignalR;
+using YourApplicationName.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(); // Dùng SwaggerGen chuẩn của .NET 8
+builder.Services.AddSingleton<IAgentTrackerService, AgentTrackerService>();
+builder.Services.AddOpenApi();
 
-// --- 1. ĐĂNG KÝ SERVICE ---
-// Nếu bạn chưa có file AgentTrackerService thì comment dòng dưới lại để tránh lỗi
-// builder.Services.AddSingleton<IAgentTrackerService, AgentTrackerService>();
-
+//Thêm dịch vụ SignalR
 builder.Services.AddSignalR();
-
-// --- 2. CẤU HÌNH CORS (CHO PHÉP TẤT CẢ) ---
+//Thêm dịch vụ CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policyBuilder => policyBuilder
         .AllowAnyMethod()
         .AllowAnyHeader()
-        .SetIsOriginAllowed((host) => true) // <--- QUAN TRỌNG: Cho phép mọi IP kết nối (kể cả máy ảo)
-        .AllowCredentials());
+        .AllowCredentials()
+        // thay thế "http://..." bằng địa chỉ IP/port của máy ảo frontend
+        .WithOrigins("http://localhost:port_frontend", "http://ip_may_ao_frontend"));
 });
 
 var app = builder.Build();
@@ -30,21 +28,17 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();
+
 app.UseAuthorization();
 
-// --- 3. KÍCH HOẠT CORS ---
-app.UseCors("CorsPolicy"); // Phải đặt trước MapHub
+app.UseCors("CorsPolicy");
 
-// --- 4. MAP ĐƯỜNG DẪN HUB ---
-// Đảm bảo tên Class Hub là ControlHub (khớp với file ControlHub.cs bạn có)
-// Đường dẫn là "/controlhub" (khớp với Agent)
-app.MapHub<ControlHub>("/controlhub");
+app.MapHub<YourApplicationName.Hubs.ControlHub>("/controlhub");
+
 app.MapControllers();
 
-// Lắng nghe mọi IP (để máy ảo nhìn thấy)
 app.Run();
