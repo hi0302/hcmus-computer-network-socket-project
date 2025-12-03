@@ -20,7 +20,7 @@ builder.Services.AddCors(options =>
         .AllowAnyHeader()
         .AllowCredentials()
         // thay thế "http://..." bằng địa chỉ IP/port của máy ảo frontend
-        .WithOrigins("http://localhost:port_frontend", "http://ip_may_ao_frontend"));
+        .WithOrigins("http://localhost:8080", "http://10.29.xx.xx"));
 });
 
 var app = builder.Build();
@@ -31,7 +31,11 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
+
+app.UseDefaultFiles();
+
+app.UseStaticFiles();
 
 app.UseAuthorization();
 
