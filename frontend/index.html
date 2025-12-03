@@ -1,87 +1,69 @@
 <!DOCTYPE html>
 <html>
+   
 <head>
     <meta charset="UTF-8">
     <title>Remote Control Demo</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
-    <style>
-        body { font-family: Arial; margin: 20px; }
-        button { margin: 5px; }
-        ul { list-style: none; padding: 0; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 5px;}
-        li { padding: 2px 0; border-bottom: 1px solid #eee; }
-        img { border: 1px solid #ccc; margin-top: 10px; width: 500px; }
-    </style>
 </head>
-<body>
-    <h2>Remote Control Demo </h2>
+  <link rel="stylesheet" href="style.css">
 
-    <div>
-        <button onclick="sendCommand('list_process')">List Processes</button>
-        <button onclick="sendCommand('restart')">Restart</button>
-        <button onclick="sendCommand('screenshot')">Screenshot</button>
-        <button onclick="sendCommand('keylogger_start')">Start Key Logger</button>
-        <button onclick="sendCommand('shutdown')">Shutdown</button>
-        <button onclick="sendCommand('webcam_toggle')">On/Off Webcam</button>
+<body class="background">
+<h1>
+    Remote Demo
+</h1>
+    <div class="parent">
+        <div class="div1">
+            <button class="comic-button" data-command="list_process">
+                <span>List Processes</span>
+            </button>
+            <div class="slide-content">Đang gửi lệnh List Processes...</div>
+        </div>
+
+        <div class="div2">
+            <button class="comic-button" data-command="restart">
+                <span>Restart</span>
+            </button>
+            <div class="slide-content">Đây là nội dùng của List Process</div>
+        </div>
+
+        <div class="div3">
+            <button class="comic-button"  data-command="screenshot">
+                <span>Screenshot</span>
+            </button>
+            <div class="slide-content">Đây là nội dùng của List Process</div>
+        </div>
+
+        <div class="div4">
+            <button class="comic-button"  data-command="keylogger_start">
+                <span>Start Key Logger</span>
+            </button>
+            <div class="slide-content">Đây là nội dùng của List Process</div>
+        </div>
+
+        <div class="div5">
+            <button class="comic-button" data-command="shutdown">
+                <span>Shutdown</span>
+            </button>
+            <div class="slide-content">Đây là nội dùng của List Process</div>
+        </div>
+
+        <div class="div6">
+            <button class="comic-button"  data-command="webcam_toggle">
+                <span>On/Off Webcam</span>
+            </button>
+            <div class="slide-content">Đây là nội dùng của List Process</div>
+        </div>
+        <div class="div7">
+            <!--<h3>Process List</h3>
+            <ul id="processList"></ul>
+            <h3>Key Logger</h3><ul id="keyLog"></ul>
+            <h3>Screenshot</h3>
+            <img id="screenshot" alt="Screenshot will appear here"/>-->
+    </div> 
     </div>
-
-    <h3>Process List</h3>
-    <ul id="processList"></ul>
-
-    <h3>Key Logger</h3>
-    <ul id="keyLog"></ul>
-
-    <h3>Screenshot</h3>
-    <img id="screenshot" alt="Screenshot will appear here"/>
-
-    <script>
-        const agentId = "Agent1"; // Hardcode agent duy nhất
-
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl("http://localhost:5000/controlHub") // backend URL
-            .withAutomaticReconnect()
-            .build();
-
-        const processListUl = document.getElementById("processList");
-        const keyLogUl = document.getElementById("keyLog");
-        const screenshotImg = document.getElementById("screenshot");
-
-        // Nhận dữ liệu từ backend
-        connection.on("ReceiveData", response => {
-            if(response.AgentId !== agentId) return; // chỉ xử lý agent này
-
-            switch(response.DataType) {
-                case "PROCESS_LIST":
-                    processListUl.innerHTML = "";
-                    response.Data.forEach(p => {
-                        const li = document.createElement("li");
-                        li.textContent = p;
-                        processListUl.appendChild(li);
-                    });
-                    break;
-                case "KEYLOG_CHUNK":
-                    const li = document.createElement("li");
-                    li.textContent = response.Data;
-                    keyLogUl.appendChild(li);
-                    break;
-                case "SCREENSHOT":
-                    screenshotImg.src = "data:image/png;base64," + response.Data;
-                    break;
-                default:
-                    console.log("Unknown DataType:", response.DataType);
-            }
-        });
-
-        // Kết nối Hub
-        connection.start().then(() => {
-            console.log("Connected to backend SignalR Hub");
-        }).catch(err => console.error(err.toString()));
-
-        // Gửi lệnh tới agent thông qua backend
-        function sendCommand(command) {
-            const commandObj = { Command: command };
-            connection.invoke("SendCommandToAgent", agentId, JSON.stringify(commandObj))
-                .catch(err => console.error(err.toString()));
-        }
-    </script>
+    
+    <script src="ui.js"></script>
+    <script src="signalr.js"></script>
 </body>
 </html>
