@@ -1,0 +1,108 @@
+body{
+background-color: rgb(94, 231, 110);
+}
+h1 {
+    color: rgb(144, 255, 173);
+    font-family: Arial;
+    text-align: center;
+    font-size: 40px;
+    margin-top: 20px;
+}
+.background{
+    background-image: url('image/snowflake-background.jpg');
+    background-size: cover;    
+    background-repeat: no-repeat;  
+    background-position: center;  
+    background-attachment: fixed; 
+}
+.parent {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    gap: 8px;
+}
+   .parent > div {
+    display: flex;
+    align-items: center;    
+    justify-content: center;  
+} 
+
+.div2 {
+    grid-column-start: 1;
+    grid-row-start: 2;
+}
+
+.div3 {
+    grid-column-start: 1;
+    grid-row-start: 3;
+}
+
+.div4 {
+    grid-column-start: 1;
+    grid-row-start: 4;
+}
+
+.div5 {
+    grid-column-start: 1;
+    grid-row-start: 5;
+}
+
+.div6 {
+    grid-column-start: 1;
+    grid-row-start: 6;
+}
+
+.div7 {
+    grid-column: span 3 / span 3;
+    grid-row: span 6 / span 6;
+    grid-column-start: 2;
+    grid-row-start: 1;
+    border: 3px solid #6f0c0c;  /* Khung xung quanh grid */
+    border-radius: 10px;         /* Bo góc nếu muốn */
+    padding: 20px;               /* Khoảng cách giữa khung và các ô */
+    background-color: #ffffff;   /* Màu nền cho grid */
+}
+.comic-button {
+  display: inline-block;
+  padding: 10px 20px;
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  text-decoration: none;
+  color: #fff;
+  background-color: #ff5252;
+  border: 2px solid #000;
+  border-radius: 10px;
+  box-shadow: 5px 5px 0px #000;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.comic-button:hover {
+  background-color: #fff;
+  color: #ff5252;
+  border: 2px solid #ff5252;
+  box-shadow: 5px 5px 0px #ff5252;
+}
+
+.comic-button:active {
+  background-color: #fcf414;
+  box-shadow: none;
+  transform: translateY(4px);
+}
+
+
+.slide-content {
+    max-height: 0;           /* ẩn nội dung */
+    overflow: hidden;
+    transition: max-height 0.3s ease; /* hiệu ứng trượt */
+    background-color: #f0f0f0;
+    padding: 0 10px;
+    border-radius: 5px;
+    margin-top: 5px;
+}
+
+.slide-content.show {
+    max-height: 200px; /* đủ cao để chứa nội dung */
+    padding: 10px;
+}
