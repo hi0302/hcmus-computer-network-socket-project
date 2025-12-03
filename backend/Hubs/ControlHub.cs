@@ -1,15 +1,23 @@
+// file: backend/hubs/ControlHub.cs
 using Microsoft.AspNetCore.SignalR;
-using System.Collections.Concurrent; // Cần dùng ConcurrentDictionary cho thread-safe
+using YourApplicationName.Services; 
+using YourApplicationName.Dtos; 
 using System.Threading.Tasks;
+using System.Collections.Concurrent; 
 
 namespace YourApplicationName.Hubs
 {
     // Kế thừa từ lớp Hub
     public class ControlHub : Hub
     {
-        // Dùng ConcurrentDictionary để quản lý các Agent đang online
-        // Key là ConnectionId của SignalR, Value là IP/tên Agent
-        private static ConcurrentDictionary<string, string> ActiveAgents = new ConcurrentDictionary<string, string>();
+        // KHAI BÁO SERVICE
+        private readonly IAgentTrackerService _agentTrackerService;
+
+        // THÊM CONSTRUCTOR ĐỂ INJECT SERVICE
+        public ControlHub(IAgentTrackerService agentTrackerService)
+        {
+            _agentTrackerService = agentTrackerService;
+        }
 
         // -----------------------------------------------------
         // A. XỬ LÝ KẾT NỐI TỪ CLIENTS (Agent và Frontend)
@@ -18,31 +26,30 @@ namespace YourApplicationName.Hubs
         {
             string agentConnectionId = Context.ConnectionId;
 
-            // Thử thêm Agent vào danh sách (đảm bảo tính thread-safe)
-            if (ActiveAgents.TryAdd(agentConnectionId, "Agent_Online"))
-            {
-                // Thông báo cho tất cả các Web Client khác biết có Agent mới online
-                await Clients.All.SendAsync("AgentOnline", agentConnectionId);
-            }
+            // SỬ DỤNG SERVICE ĐỂ THÊM AGENT
+            _agentTrackerService.AddAgent(agentConnectionId, "Agent_Online");
+
+            // Thông báo cho tất cả các Web Client khác biết có Agent mới online
+            await Clients.All.SendAsync("AgentOnline", agentConnectionId);
 
             await base.OnConnectedAsync();
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            // Xóa Agent khỏi danh sách
-            if (ActiveAgents.TryRemove(Context.ConnectionId, out _))
-            {
-                // Thông báo cho tất cả các Web Client khác biết Agent đã Offline
-                await Clients.All.SendAsync("AgentOffline", Context.ConnectionId);
-            }
+            // SỬ DỤNG SERVICE ĐỂ XÓA AGENT
+            _agentTrackerService.RemoveAgent(Context.ConnectionId);
+
+            // Thông báo cho tất cả các Web Client khác biết Agent đã Offline
+            await Clients.All.SendAsync("AgentOffline", Context.ConnectionId);
 
             await base.OnDisconnectedAsync(exception);
         }
 
         // -----------------------------------------------------
-        // B. PHƯƠNG THỨC AGENT C# (Người 1) GỌI ĐỂ GỬI DỮ LIỆU VỀ
+        // B. PHƯƠNG THỨC AGENT C# GỌI ĐỂ GỬI DỮ LIỆU VỀ
         // -----------------------------------------------------
+        // Đảm bảo ResponseDto có namespace
         public async Task SendDataFromAgent(ResponseDto response)
         {
             // Có thể thêm logic xử lý ở đây:
@@ -53,17 +60,18 @@ namespace YourApplicationName.Hubs
             }
 
             // Đẩy tiếp dữ liệu lên tất cả các Web Client
-            // Web Client (người 3) sẽ lắng nghe "ReceiveData"
+            // Web Client sẽ lắng nghe "ReceiveData"
             await Clients.All.SendAsync("ReceiveData", response);
         }
 
         // -----------------------------------------------------
         // C. PHƯƠNG THỨC FRONTEND CÓ THỂ GỌI ĐỂ GỬI LỆNH
         // -----------------------------------------------------
+        // Giữ nguyên: Server (Hub) nhận lệnh, rồi đẩy lệnh (JSON) tới Agent cụ thể
         public async Task SendCommandToAgent(string targetAgentId, string commandJson)
         {
             // Gửi lệnh trực tiếp đến Agent cụ thể
-            // Agent (Người 1) sẽ lắng nghe phương thức "ReceiveCommand"
+            // Agent sẽ lắng nghe phương thức "ReceiveCommand"
             await Clients.Client(targetAgentId).SendAsync("ReceiveCommand", commandJson);
         }
     }
