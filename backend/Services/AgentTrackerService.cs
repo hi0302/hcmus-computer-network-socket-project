@@ -5,7 +5,7 @@ namespace YourApplicationName.Services
 {
     public class AgentTrackerService : IAgentTrackerService
     {
-        // 💡 Dùng ConcurrentDictionary để quản lý danh sách Agent (thread-safe)
+        // Dùng ConcurrentDictionary để quản lý danh sách Agent (thread-safe)
         private readonly ConcurrentDictionary<string, string> _activeAgents = new ConcurrentDictionary<string, string>();
 
         public void AddAgent(string connectionId, string agentName)
